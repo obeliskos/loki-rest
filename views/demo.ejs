@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script src="/javascripts/jquery-3.1.1.min.js"></script>
+    <!-- including lokijs on client side for querying of results -->
+    <script src="/javascripts/lokijs-1.4.3.js"></script>
+    <script src="/javascripts/loki-client.js"></script>
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <p>Welcome to <%= title %></p>
+    <p>This page will access server json service routes which interface with a global, server-side loki database instance.
+        We will also utilize a loki-client helper javascript class to abstract ajax processing.</p>
+    <p>
+    <span>Users:</span><br/>
+    <select id="selUsers" size=10 style="min-width:200px" onclick="userSelected()">
+    </select><br/>
+    <button onclick="newClicked()">new</button>
+    <button onclick="deleteClicked()">delete</button>
+    <button onclick="refreshUsers()">refresh</button>
+    </p>
+    <table border="1" style="width:300px">
+        <tr>
+            <td>
+                <label>$loki : </label>
+            </td>
+            <td>
+                <label id="lblUsersLoki"/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label>name : </label>
+            </td>
+            <td>
+                <input type="text" id="txtUsersName" value=""/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label>age : </label>
+            </td>
+            <td>
+                <input type="text" id="txtUsersAge"/>
+            </td>
+        </tr>
+    </table><br/>
+    <button onclick="saveClicked()">save</button>
+  </body>
+  <script>
+    //var collections = <%- JSON.stringify(collections) %>;
+    var lc = new LokiClient("users", "/lokisvc");
+
+    function userSelected() {
+        var userId = parseInt($("#selUsers option:selected").val(), 10);
+
+        // make server request for selected loki doc
+        lc.find({"$loki":userId}, function(results) {
+            if (results instanceof Error) {
+                alert(results);
+                return;
+            }
+
+            if (results.length === 0) return;
+
+            // must have found it, so update form fields
+            $("#lblUsersLoki").text(results[0].$loki);
+            $("#txtUsersName").val(results[0].name);
+            $("#txtUsersAge").val(results[0].age);
+        });
+    }
+
+    function newClicked() {
+        $("#lblUsersLoki").text("");
+        $("#txtUsersName").val("");
+        $("#txtUsersAge").val("");
+    }
+
+    function deleteClicked() {
+        var userId = parseInt($("#selUsers option:selected").val(), 10);
+        lc.remove(userId, function(result) {
+            if (result instanceof Error) {
+                alert(result);
+            }
+            else {
+                refreshUsers();
+            }
+
+        })
+    }
+
+    function saveClicked() {
+        var lokiId = $("#lblUsersLoki").text().trim();
+        var name = $("#txtUsersName").val();
+        var age = $("#txtUsersAge").val();
+        var doc;
+
+        if (lokiId === "") {
+            lc.insert({ name: name, age: age }, function(result) {
+                // result should be the inserted doc but we will refresh
+                refreshUsers();
+            })
+        }
+        else {
+            lc.find({ $loki: parseInt(lokiId, 10)}, function (result) {
+                if (Array.isArray(result) && result.length > 0) {
+                    doc = result[0];
+                    doc.name = name;
+                    doc.age = parseInt(age, 10);
+                    lc.update(doc, function(result) {
+                        refreshUsers();
+                    });
+                }
+            });
+        }
+    }
+
+    function refreshUsers() {
+        $("#selUsers").empty();
+        lc.find({}, function(result) {
+            result.forEach(function(obj){
+                $("#selUsers").append($('<option>', {
+                    value: obj.$loki,
+                    text: obj.name
+                }));
+            });
+        });
+    }
+
+    $(document).ready(function() {
+        refreshUsers();
+    });
+  </script>
+</html>
