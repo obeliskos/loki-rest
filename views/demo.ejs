@@ -11,8 +11,16 @@
   <body>
     <h1><%= title %></h1>
     <p>Welcome to <%= title %></p>
-    <p>This page will access server json service routes which interface with a global, server-side loki database instance.
-        We will also utilize a loki-client helper javascript class to abstract ajax processing.</p>
+    <p>
+      <ul>
+        <li>This page will access express json service routes which interface with a global, server-side loki database instance.</li>
+        <li>We will utilize a loki-client helper javascript class to abstract ajax processing.</li>
+        <li>Initial list population is rendered with the page on the server.</li>
+        <li>Eventually we may utilize lokijs more on the client page for querying results and or enable proto inflation of javascript classes across serializations.</li>
+        <li>The database is configured to autosave/autoload every few seconds so your changes should persist across application runs</li>
+       </ul>
+    </p>
+    <br/>
     <p>
     <span>Users:</span><br/>
     <select id="selUsers" size=10 style="min-width:200px" onclick="userSelected()">
